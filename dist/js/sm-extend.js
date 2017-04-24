@@ -3263,7 +3263,7 @@ Swiper
 
         // Swipe Up To Close
         var swipeToCloseIsTouched = false;
-        var allowSwipeToClose = true;
+        var allowSwipeToClose = false;
         var swipeToCloseDiff, swipeToCloseStart, swipeToCloseCurrent, swipeToCloseStarted = false, swipeToCloseActiveSlide, swipeToCloseTimeStart;
         pb.swipeCloseTouchStart = function () {
             if (!allowSwipeToClose) return;
