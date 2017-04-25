@@ -20,18 +20,12 @@
 
         var navbarTemplate = pb.params.navbarTemplate ||
                             '<header class="bar bar-nav">' +
-                              '<a class="icon icon-left pull-left photo-browser-close-link' + (pb.params.type === 'popup' ?  " close-popup" : "") + '"></a>' +
-                              '<h1 class="title"><div class="center sliding"><span class="photo-browser-current"></span> <span class="photo-browser-of">' + pb.params.ofText + '</span> <span class="photo-browser-total"></span></div></h1>' +
+                            '<a class="icon icon-left pull-left photo-browser-close-link' + (pb.params.type === 'popup' ?  " close-popup" : "") + '"></a>' +
+                            '<h1 class="title"><div class="center sliding"><span class="photo-browser-current"></span> <span class="photo-browser-of">' + pb.params.ofText + '</span> <span class="photo-browser-total"></span></div></h1>' +
                             '</header>';
 
         var toolbarTemplate = pb.params.toolbarTemplate ||
                             '<nav class="bar bar-tab">' +
-                              '<a class="tab-item photo-browser-prev" href="#">' +
-                                '<i class="icon icon-prev"></i>' +
-                              '</a>' +
-                              '<a class="tab-item photo-browser-next" href="#">' +
-                                '<i class="icon icon-next"></i>' +
-                              '</a>' +
                             '</nav>';
 
         var template = pb.params.template ||
@@ -101,7 +95,7 @@
                             .replace('{{noNavbar}}', (pb.params.navbar ? '' : 'no-navbar'))
                             .replace('{{photos}}', photosHtml)
                             .replace('{{captions}}', captionsTemplate.replace(/{{captions}}/g, captionsHtml))
-                            .replace('{{toolbar}}', (pb.params.toolbar ? toolbarTemplate : ''));
+                            .replace('{{toolbar}}', "");
 
         pb.activeIndex = pb.params.initialSlide;
         pb.openIndex = pb.activeIndex;
@@ -314,17 +308,17 @@
         // Expose
         pb.exposed = false;
         pb.toggleExposition = function () {
-            if (pb.container) pb.container.toggleClass('photo-browser-exposed');
+            // if (pb.container) pb.container.toggleClass('photo-browser-exposed');
             if (pb.params.expositionHideCaptions) pb.captionsContainer.toggleClass('photo-browser-captions-exposed');
             pb.exposed = !pb.exposed;
         };
         pb.enableExposition = function () {
-            if (pb.container) pb.container.addClass('photo-browser-exposed');
+            // if (pb.container) pb.container.addClass('photo-browser-exposed');
             if (pb.params.expositionHideCaptions) pb.captionsContainer.addClass('photo-browser-captions-exposed');
             pb.exposed = true;
         };
         pb.disableExposition = function () {
-            if (pb.container) pb.container.removeClass('photo-browser-exposed');
+            // if (pb.container) pb.container.removeClass('photo-browser-exposed');
             if (pb.params.expositionHideCaptions) pb.captionsContainer.removeClass('photo-browser-captions-exposed');
             pb.exposed = false;
         };
