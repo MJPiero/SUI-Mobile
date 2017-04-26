@@ -296,13 +296,20 @@
                 var target = pb.params.loop ? pb.swiper.slides : pb.slides;
 
                 // Scale image
-                var gestureImg, scale = 1, currentScale = 1, isScaling = false;
+                // Scale image
                 var hammertime = new Hammer($('.photo-browser-swiper-container')[0],{});
                 hammertime.get('pinch').set({
                     enable: true
                 });
+                hammertime.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
                 hammertime.on("pinchstart", function(e){
-                    gestureImg = $(e.target);
+
+                    if(!gestureImg){
+                       gestureImg = $(e.target);
+                       gestureImgWrap = gestureImg.parent('.photo-browser-zoom-container');
+                       gestureSlide = pb.swiper.slides.eq(pb.swiper.activeIndex);
+                    }
                     gestureImg.transition(0);
                     isScaling = true;
                 }).on("pinchmove", function(e){
@@ -322,12 +329,38 @@
                     gestureImg.transition(pb.params.speed).transform('translate3d(0,0,0) scale(' + scale + ')');
                     currentScale = scale;
                     isScaling = false;
-                    if (scale === 1) gestureSlide = undefined;
-                });
+                    if(scale === 1) gestureSlide = undefined;
+                    gestureSlide = undefined;
+                    gestureImgWrap = undefined;
+                    gestureImg = undefined;
+                })
                 // Move image
-                target[action]('touchstart', pb.onSlideTouchStart);
-                target[action]('touchmove', pb.onSlideTouchMove);
-                target[action]('touchend', pb.onSlideTouchEnd);
+                .on("panstart", function(e){
+                    if(currentScale !== 1){
+                        if(!gestureImg){
+                             gestureImg = $(e.target);
+                             gestureImgWrap = gestureImg.parent('.photo-browser-zoom-container');
+                             gestureSlide = pb.swiper.slides.eq(pb.swiper.activeIndex);
+                             gestureImg.transition(0).transform('translate3d('+ deltaX +'px,'+ deltaY +'px,0) scale(' + scale + ')');
+                        }
+                    }
+                }).on("panmove", function(e){
+                    if(currentScale !== 1){
+                        gestureImg.transition(0).transform('translate3d(' + (deltaX + e.deltaX) + 'px,' + (deltaY + e.deltaY) + 'px,0) scale(' + scale + ')');
+                        gestureImgWrap.transform(0);
+                        e.preventDefault();
+                    }
+                }).on("panend", function(e){
+                    if(currentScale !== 1){
+                        deltaX = deltaX + e.deltaX;
+                        deltaY = deltaY + e.deltaY;
+                        gestureImg.transition(0).transform('translate3d(' + deltaX + 'px,' + deltaY + 'px,0) scale(' + scale + ')');
+                        pb.swiperWrapper.transform(0);
+                        gestureSlide = undefined;
+                        gestureImgWrap = undefined;
+                        gestureImg = undefined;
+                    }
+                });
             }
             pb.container.find('.photo-browser-close-link')[action]('click', pb.close);
         };
@@ -351,7 +384,6 @@
         };
 
         // Gestures
-        var gestureSlide, gestureImg, gestureImgWrap, scale = 1, currentScale = 1, isScaling = false;
         pb.toggleZoom = function () {
             if (!gestureSlide) {
                 gestureSlide = pb.swiper.slides.eq(pb.swiper.activeIndex);
@@ -370,123 +402,6 @@
                 gestureImg.transition(300).transform('translate3d(0,0,0) scale(' + scale + ')');
             }
         };
-
-        var imageIsTouched, imageIsMoved, imageCurrentX, imageCurrentY, imageMinX, imageMinY, imageMaxX, imageMaxY, imageWidth, imageHeight, imageTouchesStart = {}, imageTouchesCurrent = {}, imageStartX, imageStartY, velocityPrevPositionX, velocityPrevTime, velocityX, velocityPrevPositionY, velocityY;
-
-        pb.onSlideTouchStart = function (e) {
-            if (!gestureImg || gestureImg.length === 0) return;
-            if (imageIsTouched) return;
-            if ($.device.os === 'android') e.preventDefault();
-            imageIsTouched = true;
-            imageTouchesStart.x = e.type === 'touchstart' ? e.targetTouches[0].pageX : e.pageX;
-            imageTouchesStart.y = e.type === 'touchstart' ? e.targetTouches[0].pageY : e.pageY;
-        };
-        pb.onSlideTouchMove = function (e) {
-            if (!gestureImg || gestureImg.length === 0) return;
-            pb.swiper.allowClick = false;
-            if (!imageIsTouched || !gestureSlide) return;
-
-            if (!imageIsMoved) {
-                imageWidth = gestureImg[0].offsetWidth;
-                imageHeight = gestureImg[0].offsetHeight;
-                imageStartX = $.getTranslate(gestureImgWrap[0], 'x') || 0;
-                imageStartY = $.getTranslate(gestureImgWrap[0], 'y') || 0;
-                gestureImgWrap.transition(0);
-            }
-            // Define if we need image drag
-            var scaledWidth = imageWidth * scale;
-            var scaledHeight = imageHeight * scale;
-
-            if (scaledWidth < pb.swiper.width && scaledHeight < pb.swiper.height) return;
-
-            imageMinX = Math.min((pb.swiper.width / 2 - scaledWidth / 2), 0);
-            imageMaxX = -imageMinX;
-            imageMinY = Math.min((pb.swiper.height / 2 - scaledHeight / 2), 0);
-            imageMaxY = -imageMinY;
-
-            imageTouchesCurrent.x = e.type === 'touchmove' ? e.targetTouches[0].pageX : e.pageX;
-            imageTouchesCurrent.y = e.type === 'touchmove' ? e.targetTouches[0].pageY : e.pageY;
-
-            if (!imageIsMoved && !isScaling) {
-                if (
-                    (Math.floor(imageMinX) === Math.floor(imageStartX) && imageTouchesCurrent.x < imageTouchesStart.x) ||
-                    (Math.floor(imageMaxX) === Math.floor(imageStartX) && imageTouchesCurrent.x > imageTouchesStart.x)
-                    ) {
-                    imageIsTouched = false;
-                    return;
-                }
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            imageIsMoved = true;
-            imageCurrentX = imageTouchesCurrent.x - imageTouchesStart.x + imageStartX;
-            imageCurrentY = imageTouchesCurrent.y - imageTouchesStart.y + imageStartY;
-
-            if (imageCurrentX < imageMinX) {
-                imageCurrentX =  imageMinX + 1 - Math.pow((imageMinX - imageCurrentX + 1), 0.8);
-            }
-            if (imageCurrentX > imageMaxX) {
-                imageCurrentX = imageMaxX - 1 + Math.pow((imageCurrentX - imageMaxX + 1), 0.8);
-            }
-
-            if (imageCurrentY < imageMinY) {
-                imageCurrentY =  imageMinY + 1 - Math.pow((imageMinY - imageCurrentY + 1), 0.8);
-            }
-            if (imageCurrentY > imageMaxY) {
-                imageCurrentY = imageMaxY - 1 + Math.pow((imageCurrentY - imageMaxY + 1), 0.8);
-            }
-
-            //Velocity
-            if (!velocityPrevPositionX) velocityPrevPositionX = imageTouchesCurrent.x;
-            if (!velocityPrevPositionY) velocityPrevPositionY = imageTouchesCurrent.y;
-            if (!velocityPrevTime) velocityPrevTime = Date.now();
-            velocityX = (imageTouchesCurrent.x - velocityPrevPositionX) / (Date.now() - velocityPrevTime) / 2;
-            velocityY = (imageTouchesCurrent.y - velocityPrevPositionY) / (Date.now() - velocityPrevTime) / 2;
-            if (Math.abs(imageTouchesCurrent.x - velocityPrevPositionX) < 2) velocityX = 0;
-            if (Math.abs(imageTouchesCurrent.y - velocityPrevPositionY) < 2) velocityY = 0;
-            velocityPrevPositionX = imageTouchesCurrent.x;
-            velocityPrevPositionY = imageTouchesCurrent.y;
-            velocityPrevTime = Date.now();
-
-            gestureImgWrap.transform('translate3d(' + imageCurrentX + 'px, ' + imageCurrentY + 'px,0)');
-        };
-        pb.onSlideTouchEnd = function () {
-            if (!gestureImg || gestureImg.length === 0) return;
-            if (!imageIsTouched || !imageIsMoved) {
-                imageIsTouched = false;
-                imageIsMoved = false;
-                return;
-            }
-            imageIsTouched = false;
-            imageIsMoved = false;
-            var momentumDurationX = 300;
-            var momentumDurationY = 300;
-            var momentumDistanceX = velocityX * momentumDurationX;
-            var newPositionX = imageCurrentX + momentumDistanceX;
-            var momentumDistanceY = velocityY * momentumDurationY;
-            var newPositionY = imageCurrentY + momentumDistanceY;
-
-            //Fix duration
-            if (velocityX !== 0) momentumDurationX = Math.abs((newPositionX - imageCurrentX) / velocityX);
-            if (velocityY !== 0) momentumDurationY = Math.abs((newPositionY - imageCurrentY) / velocityY);
-            var momentumDuration = Math.max(momentumDurationX, momentumDurationY);
-
-            imageCurrentX = newPositionX;
-            imageCurrentY = newPositionY;
-
-            // Define if we need image drag
-            var scaledWidth = imageWidth * scale;
-            var scaledHeight = imageHeight * scale;
-            imageMinX = Math.min((pb.swiper.width / 2 - scaledWidth / 2), 0);
-            imageMaxX = -imageMinX;
-            imageMinY = Math.min((pb.swiper.height / 2 - scaledHeight / 2), 0);
-            imageMaxY = -imageMinY;
-            imageCurrentX = Math.max(Math.min(imageCurrentX, imageMaxX), imageMinX);
-            imageCurrentY = Math.max(Math.min(imageCurrentY, imageMaxY), imageMinY);
-
-            gestureImgWrap.transition(momentumDuration).transform('translate3d(' + imageCurrentX + 'px, ' + imageCurrentY + 'px,0)');
-        };
-
         // Swipe Up To Close
         var swipeToCloseIsTouched = false;
         var allowSwipeToClose = false;
